@@ -1,0 +1,40 @@
+# Môi trường ảo Python
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Dữ liệu ảnh lớn (Dataset lưu trên Google Drive, không push lên Git)
+data/
+datasets/
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+
+# Trọng số mô hình nặng (Lưu trên Drive / Hugging Face)
+*.pt
+*.pth
+*.onnx
+*.rknn
+*.engine
+*.weights
+
+# Cơ sở dữ liệu nội bộ & File log
+*.sqlite3
+*.db
+*.log
+
+# File cấu hình IDE & Hệ điều hành
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build folder của C/C++ & Firmware
+build/
+.pio/
+*.bin
+*.hex
