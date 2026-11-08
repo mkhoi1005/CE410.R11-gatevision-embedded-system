@@ -1,0 +1,101 @@
+{
+  "task": "license plate detection (1 class)",
+  "dataset": "GreenParking",
+  "classes": [
+    "plate"
+  ],
+  "chosen": "yolo26n_plate",
+  "init_weights": "yolo26n.pt",
+  "train_imgsz": 480,
+  "export_imgsz": [
+    320,
+    480
+  ],
+  "conf_threshold": 0.6,
+  "val": {
+    "map50": 0.995,
+    "map5095": 0.9356752148496593,
+    "p": 0.9997537576137959,
+    "r": 1.0,
+    "best_f1": 0.9999985404228597,
+    "best_f1_conf": 0.9109109109109109
+  },
+  "test": {
+    "map50": 0.995,
+    "map5095": 0.9190918039357113,
+    "p": 0.9997961575233981,
+    "r": 1.0,
+    "best_f1": 0.9999993374925578,
+    "best_f1_conf": 0.9079079079079079
+  },
+  "export_parity_val": {
+    "onnx": {
+      "map50": 0.995,
+      "map5095": 0.933739474291802,
+      "p": 0.999723502255114,
+      "r": 1.0,
+      "best_f1": 0.9999980664063021,
+      "best_f1_conf": 0.9109109109109109
+    },
+    "ncnn": {
+      "map50": 0.995,
+      "map5095": 0.933739474291802,
+      "p": 0.9997235021410437,
+      "r": 1.0,
+      "best_f1": 0.9999980662454363,
+      "best_f1_conf": 0.9109109109109109
+    }
+  },
+  "cpu_latency_ms_kaggle_relative": {
+    "pt": 38.1,
+    "onnx": 28.8,
+    "ncnn": 31.6
+  },
+  "split_images": {
+    "test": 275,
+    "train": 1198,
+    "val": 275
+  },
+  "train_cfg": {
+    "imgsz": 480,
+    "epochs": 100,
+    "batch": 32,
+    "patience": 25,
+    "seed": 42,
+    "workers": 4,
+    "device": 0,
+    "cos_lr": true,
+    "close_mosaic": 10,
+    "mosaic": 1.0,
+    "mixup": 0.0,
+    "scale": 0.4,
+    "translate": 0.1,
+    "degrees": 5.0,
+    "fliplr": 0.0,
+    "hsv_h": 0.015,
+    "hsv_s": 0.6,
+    "hsv_v": 0.45,
+    "erasing": 0.2,
+    "amp": true,
+    "plots": true,
+    "deterministic": false
+  },
+  "platform": {
+    "python": "3.13.16",
+    "os": "Linux-6.18.55+-x86_64-with-glibc2.39",
+    "cpu_count": 4,
+    "seed": 42,
+    "ultralytics": "8.4.207",
+    "torch": "2.11.0+cu130",
+    "cuda_available": true,
+    "ram_gb": 33.7,
+    "gpu": "Tesla T4",
+    "gpu_ram_gb": 15.6
+  },
+  "note": "Độ trễ đo trên CPU Kaggle, KHÔNG phải Raspberry Pi 4; hãy benchmark lại trên Pi.",
+  "todo": [
+    "OCR ký tự biển số (chưa có nhãn ký tự)",
+    "Kiểm tra lại bằng ảnh thật từ ESP32-CAM tại cổng",
+    "Benchmark độ trễ thật trên Pi 4"
+  ]
+}
