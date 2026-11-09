@@ -1,0 +1,27 @@
+{
+  "task": "OCR biển số xe máy VN 2 dòng (CRNN+CTC)",
+  "model_used": "stage2",
+  "vocab": "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ|",
+  "input": "(1,1,32,256) float32, tiền xử lý = plate_ocr.make_line",
+  "params_M": 1.5,
+  "human_labels": 266,
+  "human_seed": 179,
+  "human_eval_n": 52,
+  "pseudo_labels": 0,
+  "version": "v2",
+  "real_eval_exact": 1.0,
+  "real_eval_cer": 0.0,
+  "note_eval": "real_eval_* đã dùng để chọn epoch/stage -> lạc quan. Hãy dùng heldout_test_*.",
+  "heldout_test": {
+    "n": 88,
+    "exact_votes3": 0.9886363636363636,
+    "exact_votes1": 0.9886363636363636
+  },
+  "note": "Chỉ số trên dữ liệu tổng hợp KHÔNG phản ánh độ chính xác thật. real_eval_* = null nghĩa là chưa có nhãn tay.",
+  "todo": [
+    "Sửa real_labels_template.csv để có tập đánh giá thật",
+    "Biển 2 chữ seri / biển ô tô / biển màu khác",
+    "Bỏ phiếu nhiều khung hình",
+    "Đo độ trễ trên Pi 4"
+  ]
+}
