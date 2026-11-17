@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>GATE VISION · Giám sát cổng</title>
+<link rel="stylesheet" href="css/app.css">
+<script defer src="js/config.js"></script>
+<script defer src="js/mock.js"></script>
+<script defer src="js/api.js"></script>
+<script defer src="js/app.js"></script>
+<script defer src="js/alpine.min.js"></script>
+</head>
+<body x-data="app()" x-init="init()" x-cloak>
+
+<!-- Biểu tượng vẽ tay, cùng nét 2px -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gate" viewBox="0 0 24 24"><path d="M3 20V8M21 20V8M3 8l9-4 9 4M7 20v-8h10v8"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4M12 8v4l3 2"/></symbol>
+  <symbol id="i-lot" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></symbol>
+  <symbol id="i-device" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></symbol>
+  <symbol id="i-stats" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2.5.7 4 2.7 4 5.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2zM12 10v5M12 18v.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 8.5A10 10 0 0 0 2 12M5.5 12a7 7 0 0 1 3-1.8M16 12.5a7 7 0 0 1 2.5 2M12 20h.01M22 12a10 10 0 0 0-9-5.5"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M16 8l4 4-4 4M20 12H9"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+</svg>
+
+<!-- ============ ĐĂNG NHẬP ============ -->
+<main class="login" x-show="booted && !user">
+  <form class="login-box" @submit.prevent="doLogin()">
+    <div class="brand"><span class="logo"><svg class="ic"><use href="#i-gate"/></svg></span> GATE VISION</div>
+    <h1>Đăng nhập</h1>
+    <p class="muted" style="margin-bottom:20px">Giao diện cho người trực cổng bãi xe.</p>
+    <div class="err-text" role="alert" x-show="loginForm.error" x-text="loginForm.error"></div>
+    <div class="field"><label for="lg-user">Tên đăng nhập</label>
+      <input id="lg-user" x-model="loginForm.username" autocomplete="username" required></div>
+    <div class="field"><label for="lg-pass">Mật khẩu</label>
+      <input id="lg-pass" type="password" x-model="loginForm.password" autocomplete="current-password" required></div>
+    <button class="btn" :disabled="loginForm.busy" x-text="loginForm.busy ? 'Đang đăng nhập…' : 'Đăng nhập'"></button>
+    <div class="mockhint" x-show="mock">Đang dùng <b>dữ liệu giả</b>, chưa nối server. Tài khoản thử:<br>
+      quản trị <code>admin</code> / <code>admin123</code> (phải đổi mật khẩu lần đầu)<br>
+      người trực <code>truc1</code> / <code>truc1234</code></div>
+  </form>
+</main>
+
+<!-- ============ ĐỔI MẬT KHẨU BẮT BUỘC ============ -->
+<main class="login" x-show="user && user.must_change_password">
+  <form class="login-box" @submit.prevent="changePassword(true)">
+    <div class="brand"><span class="logo"><svg class="ic"><use href="#i-gate"/></svg></span> GATE VISION</div>
+    <h1>Đổi mật khẩu để tiếp tục</h1>
+    <p class="muted" style="margin-bottom:20px">Đây là lần đăng nhập đầu tiên. Hãy đặt mật khẩu mới trước khi dùng hệ thống.</p>
+    <div class="err-text" role="alert" x-show="pw.error" x-text="pw.error"></div>
+    <div class="field"><label for="fp-old">Mật khẩu hiện tại</label><input id="fp-old" type="password" x-model="pw.old" autocomplete="current-password" required></div>
+    <div class="field"><label for="fp-n1">Mật khẩu mới</label><input id="fp-n1" type="password" x-model="pw.n1" autocomplete="new-password" required>
+      <p class="hint">Ít nhất 8 ký tự.</p></div>
+    <div class="field"><label for="fp-n2">Nhập lại mật khẩu mới</label><input id="fp-n2" type="password" x-model="pw.n2" autocomplete="new-password" required></div>
+    <button class="btn" :disabled="pw.busy">Lưu mật khẩu</button>
+    <button type="button" class="btn ghost" style="width:100%;margin-top:10px" @click="doLogout()">Đăng xuất</button>
+  </form>
+</main>
+
+<!-- ============ ỨNG DỤNG ============ -->
+<div class="shell" x-show="user && !user.must_change_password">
+  <aside class="side" :class="{open: menu}">
+    <div class="brand"><span class="logo"><svg class="ic"><use href="#i-gate"/></svg></span> GATE VISION</div>
+    <button class="btn menu-btn" type="button" @click="menu = !menu" :aria-expanded="menu" aria-label="Mở menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+    <nav class="nav" aria-label="Chính">
+      <a href="#dashboard" :aria-current="route === 'dashboard' ? 'page' : null">Giám sát <span class="count" x-show="holds.length" x-text="holds.length"></span></a>
+      <a href="#history" :aria-current="route === 'history' ? 'page' : null">Lịch sử</a>
+      <a href="#lot" :aria-current="route === 'lot' ? 'page' : null">Xe trong bãi</a>
+      <a href="#devices" :aria-current="route === 'devices' ? 'page' : null">Thiết bị</a>
+      <a href="#stats" :aria-current="route === 'stats' ? 'page' : null">Thống kê</a>
+      <a href="#profile" :aria-current="route === 'profile' ? 'page' : null">Tài khoản</a>
+      <a href="#users" x-show="user && user.role === 'admin'" :aria-current="route === 'users' ? 'page' : null">Người dùng</a>
+    </nav>
+    <div class="side-foot">
+      <div class="who"><strong x-text="user && user.display_name"></strong><span x-text="user && (user.role === 'admin' ? 'Quản trị' : 'Người trực')"></span></div>
+      <button class="btn ghost" type="button" @click="doLogout()"><svg class="ic sm"><use href="#i-out"/></svg> Đăng xuất</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <h1 x-text="titles[route]"></h1>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost sm" type="button" @click="toggleSound()" :aria-pressed="sound">
+          <svg class="ic sm"><use :href="sound ? '#i-sound' : '#i-mute'"/></svg> <span x-text="sound ? 'Âm báo: bật' : 'Âm báo: tắt'"></span></button>
+        <span class="ws" :class="wsState" role="status"><span class="dot"></span>
+          <span x-text="wsState === 'up' ? 'Đang cập nhật trực tiếp' : wsState === 'connecting' ? 'Đang kết nối…' : 'Mất kết nối, đang thử lại'"></span></span>
+      </div>
+    </header>
+
+    <div class="banner" role="alert" x-show="wsState === 'down'"><svg class="ic"><use href="#i-offline"/></svg>
+      Mất kết nối với máy chủ. Nút “Cho qua” và “Từ chối” tạm khóa cho đến khi nối lại.</div>
+
+    <!-- ===== Giám sát: bàn xử lý + sổ trực + hai ô giám sát ===== -->
+    <section x-show="route === 'dashboard'" aria-label="Giám sát cổng">
+      <template x-for="a in offlineAlerts" :key="a.id">
+        <div class="banner hold" role="status"><svg class="ic"><use href="#i-offline"/></svg><span x-text="a.message + '. Từ ' + timeShort(a.time) + '.'"></span></div>
+      </template>
+      <div class="deskgrid">
+        <div class="col">
+          <article class="card desk" :class="desk ? (statusInfo(desk).cls === 'err' ? 'err' : '') : 'idle'" aria-live="polite" aria-label="Bàn xử lý">
+            <template x-if="desk">
+              <div>
+                <div class="desk-head">
+                  <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+                    <h2 x-text="'Cần xử lý · ' + gateName(desk.gate)"></h2>
+                    <span class="badge" :class="statusInfo(desk).cls" x-text="statusInfo(desk).label"></span>
+                  </div>
+                  <span class="muted num" x-text="'Lúc ' + timeShort(desk.time)"></span>
+                </div>
+                <div class="desk-body">
+                  <figure class="evid" style="margin:0"><img :src="desk.image_url" alt="Ảnh chụp lượt xe cần xử lý"><figcaption x-text="'Ảnh chụp lúc ' + timeShort(desk.time)"></figcaption></figure>
+                  <div class="desk-info">
+                    <div class="plate lg" :class="{none: !desk.plate}"><span class="l1" x-text="plateLines(desk.plate)[0]"></span><span class="l2" x-text="plateLines(desk.plate)[1]"></span></div>
+                    <p class="why" x-text="explain(desk)"></p>
+                    <div x-show="desk.confidence != null">
+                      <div class="meter" role="img" :aria-label="'Độ tin cậy ' + pct(desk.confidence) + ' phần trăm'"><i :style="'width:' + pct(desk.confidence) + '%'"></i></div>
+                      <span class="hint" x-text="'Độ tin cậy ' + pct(desk.confidence) + '%'"></span>
+                    </div>
+                    <div class="left" :style="holdLeft(desk) === 0 ? 'color:var(--err)' : ''"><span x-text="holdLeft(desk) === 0 ? 'Đã hết hạn' : holdText(desk)"></span><small x-text="holdLeft(desk) === 0 ? 'Cổng không mở' : 'còn lại để xử lý'"></small></div>
+                    <div class="acts">
+                      <button class="btn danger" type="button" :disabled="!canAct(desk)" @click="openOverride(desk, 'DENY')">Từ chối</button>
+                      <button class="btn" type="button" :disabled="!canAct(desk)" @click="openOverride(desk, 'PASS')">Cho qua</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="queue" x-show="queue.length">
+                  <span class="lbl">Đang chờ sau:</span>
+                  <template x-for="q in queue" :key="q.event_id"><button type="button" class="btn ghost sm" @click="deskSel = q.event_id" x-text="(q.gate === 'IN' ? 'A' : 'B') + ' · ' + (q.plate || 'Không đọc được') + ' · còn ' + holdText(q)"></button></template>
+                </div>
+              </div>
+            </template>
+            <template x-if="!desk">
+              <div class="desk-empty"><strong>Không có lượt nào cần xử lý</strong><span class="muted">Khi hệ thống không chắc về một xe (không đọc được biển, biển trùng hoặc không khớp), lượt đó hiện ở đây để bạn quyết định “Cho qua” hay “Từ chối”.</span></div>
+            </template>
+          </article>
+
+          <article class="card logbook" aria-label="Sổ trực">
+            <div class="desk-head"><h2>Sổ trực</h2><a href="#history">Xem toàn bộ lịch sử</a></div>
+            <ol x-show="logEvents.length">
+              <template x-for="e in logEvents" :key="e.event_id">
+                <li><button type="button" class="logrow" :class="statusInfo(e).cls" @click="detail = e">
+                  <span class="t" x-text="timeShort(e.time)"></span>
+                  <span class="g" x-text="e.gate === 'IN' ? 'A · vào' : 'B · ra'"></span>
+                  <span class="p" x-text="e.plate || 'Không đọc được'"></span>
+                  <span class="s"><span class="badge" :class="statusInfo(e).cls" x-text="statusInfo(e).label"></span><br><span class="r" x-text="resultText(e)"></span></span>
+                </button></li>
+              </template>
+            </ol>
+            <div class="empty" x-show="!logEvents.length">Chưa có lượt xe nào. Khi camera ghi nhận xe, từng lượt sẽ hiện ở đây theo thứ tự thời gian.</div>
+          </article>
+        </div>
+
+        <div class="col monitors">
+          <template x-for="g in gates" :key="g.id">
+            <article class="card mon" :aria-label="'Giám sát ' + g.name">
+              <div class="mon-head">
+                <h2 x-text="g.name + ' · ' + g.dir"></h2>
+                <span class="badge" :class="camOk(g.id) ? 'ok' : 'off'" x-text="camOk(g.id) ? 'Camera hoạt động' : 'Mất kết nối'"></span>
+              </div>
+              <div class="cam">
+                <img x-show="camOk(g.id) && camSrc(g.id)" :src="camSrc(g.id)" :alt="'Hình từ camera ' + g.name" @error="if ($el.getAttribute('src')) camErr[g.id] = true" @load="camErr[g.id] = false">
+                <div class="nocam" x-show="!camOk(g.id) || !camSrc(g.id)"><svg class="ic" style="width:28px;height:28px"><use href="#i-offline"/></svg><span>Không có hình từ camera</span></div>
+                <span class="note" x-show="devtools && camOk(g.id)">Hình mẫu</span>
+              </div>
+              <div class="mon-foot">
+                <template x-if="lastEvent(g.id)"><div>
+                  <span>Lượt gần nhất · <span x-text="timeShort(lastEvent(g.id).time)"></span></span><br>
+                  <span class="mono" x-text="lastEvent(g.id).plate || 'Không đọc được'"></span>
+                  <span class="badge" :class="statusInfo(lastEvent(g.id)).cls" style="margin-left:8px" x-text="statusInfo(lastEvent(g.id)).label"></span>
+                </div></template>
+                <span x-show="!lastEvent(g.id)">Chưa có lượt xe nào ở cổng này.</span>
+                <span x-show="device(g.id)" x-text="device(g.id) ? 'Thiết bị: ' + stateText(device(g.id).state) + (device(g.id).online ? ' · sóng ' + device(g.id).rssi + ' dBm' : '') : ''"></span>
+              </div>
+            </article>
+          </template>
+        </div>
+      </div>
+
+      <details class="mocktools" x-show="devtools">
+        <summary>Công cụ thử (chỉ có ở chế độ thử, không có khi chạy thật)</summary>
+        <p class="hint">Bấm để tạo tình huống, rồi thử xử lý trên màn hình này. Mỗi tình huống ghi rõ kết quả mong đợi trong file CHUC_NANG_VA_KIEM_CHUNG.md.</p>
+        <h3 class="toolgrp">Xe vào, xe ra bình thường</h3>
+        <div class="row">
+          <button class="btn ghost sm" @click="sim('in_ok')">Xe vào hợp lệ</button>
+          <button class="btn ghost sm" @click="sim('out_ok')">Xe ra khớp</button>
+          <button class="btn ghost sm" @click="sim('burst')">Thêm 30 xe vào + ra (thử phân trang)</button>
+        </div>
+        <h3 class="toolgrp">Tình huống cần người trực xử lý</h3>
+        <div class="row">
+          <button class="btn ghost sm" @click="sim('dup_in')">Biển trùng lúc vào</button>
+          <button class="btn ghost sm" @click="sim('unreadable_in')">Vào, không đọc được</button>
+          <button class="btn ghost sm" @click="sim('unreadable_out')">Ra, không đọc được</button>
+          <button class="btn ghost sm" @click="sim('fuzzy_out')">Ra, biển gần giống</button>
+          <button class="btn ghost sm" @click="sim('mismatch_out')">Ra, không khớp</button>
+          <button class="btn ghost sm" @click="sim('multi_hold')">3 lượt giữ cùng lúc</button>
+          <button class="btn ghost sm" @click="sim('hold_short')">Lượt giữ chỉ 15 giây (thử hết hạn)</button>
+        </div>
+        <h3 class="toolgrp">Sự cố thiết bị và kết nối</h3>
+        <div class="row">
+          <button class="btn ghost sm" @click="sim('cam_a_toggle')">Camera A ngắt/nối</button>
+          <button class="btn ghost sm" @click="sim('cam_toggle')">Camera B ngắt/nối</button>
+          <button class="btn ghost sm" @click="sim('ws_toggle')">Ngắt/nối kết nối trực tiếp</button>
+        </div>
+        <h3 class="toolgrp">Làm lại từ đầu</h3>
+        <div class="row">
+          <button class="btn ghost sm" @click="sim('reset')">Xóa lượt xe, nạp lại dữ liệu mẫu</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- ===== Lịch sử ===== -->
+    <section class="card" x-show="route === 'history'" aria-label="Lịch sử">
+      <div class="desk-head"><h2>Lịch sử lượt xe</h2><span class="muted num" x-text="hist.items.length ? hist.items.length + ' lượt' + (hist.cursor ? ', còn nữa' : '') : ''"></span><button type="button" class="btn ghost sm" @click="exportCsv()" :disabled="exporting" x-text="exporting ? 'Đang xuất...' : 'Tải CSV (theo bộ lọc)'"></button></div>
+      <form class="filters" @submit.prevent="loadHistory(true)">
+        <div class="field"><label for="f-plate">Biển số</label><input id="f-plate" x-model="hist.f.plate" placeholder="Ví dụ 59X1"></div>
+        <div class="field"><label for="f-gate">Cổng</label><select id="f-gate" x-model="hist.f.gate"><option value="">Tất cả</option><option value="IN">Cổng A (vào)</option><option value="OUT">Cổng B (ra)</option></select></div>
+        <div class="field"><label for="f-status">Trạng thái</label><select id="f-status" x-model="hist.f.status"><option value="">Tất cả</option><option value="OK">Hợp lệ</option><option value="DUPLICATE_IN">Biển đã có trong bãi</option><option value="MISMATCH">Không khớp</option><option value="FUZZY">Gần giống</option><option value="UNREADABLE">Không đọc được</option></select></div>
+        <div class="field"><label for="f-from">Từ ngày</label><input id="f-from" type="date" x-model="hist.f.from"></div>
+        <div class="field"><label for="f-to">Đến ngày</label><input id="f-to" type="date" x-model="hist.f.to"></div>
+        <div style="display:flex;gap:8px"><button class="btn">Lọc</button><button type="button" class="btn ghost" @click="clearFilters()">Xóa lọc</button></div>
+      </form>
+      <div class="err-text" role="alert" x-show="histErr" x-text="histErr" style="margin:14px 18px"></div>
+      <div class="tablewrap" x-show="hist.items.length">
+        <table class="rows">
+          <thead><tr><th>Thời gian</th><th>Cổng</th><th>Biển số</th><th>Trạng thái</th><th>Kết quả</th><th>Tin cậy</th><th>Ảnh</th></tr></thead>
+          <tbody>
+            <template x-for="e in hist.items" :key="e.event_id">
+              <tr class="click" :class="statusInfo(e).cls" tabindex="0" @click="detail = e" @keydown.enter="detail = e">
+                <td class="num" x-text="time(e.time)"></td>
+                <td x-text="e.gate === 'IN' ? 'A · vào' : 'B · ra'"></td>
+                <td class="mono strong" x-text="e.plate || 'Không đọc được'"></td>
+                <td><span class="badge" :class="statusInfo(e).cls" x-text="statusInfo(e).label"></span></td>
+                <td class="muted" x-text="resultText(e)"></td>
+                <td class="num" x-text="e.confidence != null ? pct(e.confidence) + '%' : '—'"></td>
+                <td><img class="thumb" :src="e.image_url" alt="Ảnh lượt xe" loading="lazy"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" x-show="!hist.items.length && !hist.loading && !histErr">Không có lượt xe nào khớp bộ lọc. Thử bỏ bớt điều kiện lọc.</div>
+      <div class="empty" x-show="hist.loading">Đang tải…</div>
+      <div style="padding:16px 18px;text-align:center" x-show="hist.cursor"><button class="btn ghost" @click="loadHistory(false)" :disabled="hist.loading">Tải thêm</button></div>
+    </section>
+
+    <!-- ===== Xe trong bãi ===== -->
+    <section class="card" x-show="route === 'lot'" aria-label="Xe trong bãi">
+      <div class="desk-head"><h2>Danh sách xe</h2><span class="lotcount num" x-text="filteredLot.length"></span></div>
+      <div class="filters" style="grid-template-columns:minmax(0,320px) 1fr">
+        <div class="field"><label for="lot-q">Tìm biển số</label><input id="lot-q" x-model="lotQ" placeholder="Ví dụ 12345"></div>
+        <div class="muted" style="text-align:right" x-text="lotQ ? 'xe khớp biển số đã nhập' : 'xe, xếp theo giờ vào mới nhất'"></div>
+      </div>
+      <div class="tablewrap" x-show="filteredLot.length">
+        <table class="rows">
+          <thead><tr><th>Biển số</th><th>Giờ vào</th><th>Đã gửi</th><th>Ghi chú</th><th>Ảnh lúc vào</th></tr></thead>
+          <tbody>
+            <template x-for="s in filteredLot" :key="s.id">
+              <tr :class="s.flagged ? 'hold' : 'ok'">
+                <td class="mono strong" x-text="s.plate"></td>
+                <td class="num" x-text="time(s.time_in)"></td>
+                <td class="num" x-text="duration(s.time_in)"></td>
+                <td><span class="badge hold" x-show="s.flagged">Biển chưa xác nhận</span></td>
+                <td><img class="thumb" :src="s.image_in_url" alt="Ảnh lúc vào" loading="lazy"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" x-show="!filteredLot.length" x-text="lotQ ? 'Không có xe nào khớp biển số này.' : 'Bãi đang trống. Xe vào hợp lệ sẽ hiện ở đây.'"></div>
+    </section>
+
+    <!-- ===== Thiết bị ===== -->
+    <section class="grid2" x-show="route === 'devices'" aria-label="Thiết bị">
+      <template x-for="d in devices" :key="d.device_id">
+        <article class="card dev" :class="d.online ? 'ok' : 'off'">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <h2 x-text="(d.gate === 'IN' ? 'Camera A · cổng vào' : 'Camera B · cổng ra')"></h2>
+            <span class="badge" :class="d.online ? 'ok' : 'off'" x-text="d.online ? 'Trực tuyến' : 'Mất kết nối'"></span>
+          </div>
+          <p class="devstate" x-text="stateText(d.state)"></p>
+          <div x-show="d.online">
+            <div class="meter" role="img" :aria-label="'Sóng Wi-Fi ' + rssiLevel(d.rssi)"><i :style="'width:' + Math.max(8, Math.min(100, (d.rssi + 90) * 2.5)) + '%'"></i></div>
+            <span class="hint" x-text="'Sóng Wi-Fi: ' + rssiLevel(d.rssi) + ' (' + d.rssi + ' dBm)'"></span>
+          </div>
+          <dl class="kv">
+            <dt>Mã thiết bị</dt><dd class="mono" x-text="d.device_id"></dd>
+            <dt>Địa chỉ IP</dt><dd class="mono" x-text="d.ip"></dd>
+            <dt>Thời gian chạy</dt><dd x-text="d.online ? uptime(d.uptime) : '—'"></dd>
+            <dt>Thấy lần cuối</dt><dd x-text="time(d.last_seen) + ' (' + ago(d.last_seen) + ')'"></dd>
+          </dl>
+        </article>
+      </template>
+      <div class="card empty" x-show="!devices.length">Chưa có thiết bị nào báo về.</div>
+    </section>
+
+    <!-- ===== Thống kê ===== -->
+    <section class="col page-narrow" x-show="route === 'stats'" aria-label="Thống kê">
+      <article class="card" x-show="stats">
+        <div class="desk-head"><h2>Trong bãi lúc này</h2></div>
+        <div class="stat-row"><span>Số xe đang gửi</span><b x-text="stats && stats.inside_now"></b></div>
+      </article>
+      <article class="card" x-show="stats">
+        <div class="desk-head"><h2>Hôm nay</h2><span class="muted" x-text="new Date().toLocaleDateString('vi-VN', { timeZone: cfg.TZ, weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' })"></span></div>
+        <div class="stat-list">
+          <div class="stat-row"><span>Lượt vào</span><b x-text="stats && stats.in_today"></b></div>
+          <div class="stat-row"><span>Lượt ra</span><b x-text="stats && stats.out_today"></b></div>
+          <div class="stat-row"><span>Lượt bị giữ lại<small>Xe cần người trực quyết định</small></span><b x-text="stats && stats.hold_today"></b></div>
+          <div class="stat-row"><span>Lượt không đọc được biển<small>Đã tính trong số bị giữ lại</small></span><b x-text="stats && stats.unreadable_today"></b></div>
+        </div>
+      </article>
+      <div class="card empty" x-show="!stats">Đang tải…</div>
+    </section>
+
+    <!-- ===== Tài khoản ===== -->
+    <section class="grid2 page-narrow" x-show="route === 'profile'" aria-label="Tài khoản">
+      <form class="card pad" @submit.prevent="saveName()">
+        <h2 style="margin-bottom:14px">Thông tin cá nhân</h2>
+        <div class="field"><label>Tên đăng nhập</label><div class="mono" x-text="user && user.username"></div></div>
+        <div class="field"><label>Vai trò</label><div x-text="user && (user.role === 'admin' ? 'Quản trị' : 'Người trực')"></div></div>
+        <div class="field"><label for="pf-name">Tên hiển thị</label><input id="pf-name" x-model="prof.name" required></div>
+        <div class="err-text" role="alert" x-show="prof.msg" x-text="prof.msg"></div>
+        <button class="btn">Lưu tên</button>
+      </form>
+      <form class="card pad" @submit.prevent="changePassword(false)">
+        <h2 style="margin-bottom:14px">Đổi mật khẩu</h2>
+        <div class="err-text" role="alert" x-show="pw.error" x-text="pw.error"></div>
+        <div class="field"><label for="pw-old">Mật khẩu hiện tại</label><input id="pw-old" type="password" x-model="pw.old" autocomplete="current-password" required></div>
+        <div class="field"><label for="pw-n1">Mật khẩu mới</label><input id="pw-n1" type="password" x-model="pw.n1" autocomplete="new-password" required><p class="hint">Ít nhất 8 ký tự.</p></div>
+        <div class="field"><label for="pw-n2">Nhập lại mật khẩu mới</label><input id="pw-n2" type="password" x-model="pw.n2" autocomplete="new-password" required></div>
+        <button class="btn" :disabled="pw.busy">Đổi mật khẩu</button>
+      </form>
+    </section>
+
+    <!-- ===== Người dùng (admin) ===== -->
+    <section class="grid2 users" x-show="route === 'users'" aria-label="Người dùng">
+      <div class="card">
+        <div class="desk-head"><h2>Tài khoản</h2><span class="muted num" x-text="users.length + ' người'"></span></div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Tên đăng nhập</th><th>Tên hiển thị</th><th>Vai trò</th></tr></thead>
+          <tbody><template x-for="u in users" :key="u.id">
+            <tr><td class="mono" x-text="u.username"></td><td><span x-text="u.display_name"></span><span class="muted" x-show="user && u.id === user.id"> (bạn)</span></td>
+              <td><select :aria-label="'Vai trò của ' + u.username" :value="u.role" :disabled="user && u.id === user.id" @change="setRole(u, $event.target.value)" style="min-height:36px;width:auto">
+                <option value="staff">Người trực</option><option value="admin">Quản trị</option></select></td></tr>
+          </template></tbody>
+        </table></div>
+      </div>
+      <form class="card pad" @submit.prevent="addUser()">
+        <h2 style="margin-bottom:14px">Thêm người dùng</h2>
+        <div class="err-text" role="alert" x-show="newUser.error" x-text="newUser.error"></div>
+        <div class="field"><label for="nu-user">Tên đăng nhập</label><input id="nu-user" x-model="newUser.username" required><p class="hint">3–20 ký tự thường, số hoặc dấu gạch dưới.</p></div>
+        <div class="field"><label for="nu-name">Tên hiển thị</label><input id="nu-name" x-model="newUser.display_name"></div>
+        <div class="field"><label for="nu-role">Vai trò</label><select id="nu-role" x-model="newUser.role"><option value="staff">Người trực</option><option value="admin">Quản trị</option></select></div>
+        <div class="field"><label for="nu-pass">Mật khẩu tạm</label><input id="nu-pass" type="password" x-model="newUser.password" autocomplete="new-password" required><p class="hint">Người dùng phải đổi khi đăng nhập lần đầu.</p></div>
+        <button class="btn" :disabled="newUser.busy">Tạo tài khoản</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<!-- ============ HỘP THOẠI XÁC NHẬN ============ -->
+<div class="scrim" x-show="dlg.open" @click.self="dlg.open = false">
+  <form class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title" @submit.prevent="confirmOverride()" x-show="dlg.ev">
+    <h2 id="dlg-title" x-text="dlg.action === 'PASS' ? 'Cho xe này qua?' : 'Từ chối xe này?'"></h2>
+    <div class="dlg-plate" x-show="dlg.ev">
+      <div class="plate" :class="{none: !(dlg.ev && dlg.ev.plate)}"><span class="l1" x-text="dlg.ev && plateLines(dlg.ev.plate)[0]"></span><span class="l2" x-text="dlg.ev && plateLines(dlg.ev.plate)[1]"></span></div>
+      <div style="display:grid;gap:6px">
+        <strong x-text="dlg.ev && gateName(dlg.ev.gate)"></strong>
+        <span class="badge" :class="dlg.ev && statusInfo(dlg.ev).cls" style="justify-self:start"><svg class="ic sm"><use :href="'#i-' + (dlg.ev && statusInfo(dlg.ev).icon)"/></svg><span x-text="dlg.ev && statusInfo(dlg.ev).label"></span></span>
+        <span class="muted" x-text="dlg.ev && ('Lúc ' + time(dlg.ev.time))"></span>
+      </div>
+    </div>
+    <p x-text="dlg.action === 'PASS' ? 'Cổng sẽ mở cho lượt xe này. Thao tác được ghi lại kèm tên bạn.' : 'Cổng giữ nguyên đóng. Thao tác được ghi lại kèm tên bạn.'"></p>
+
+    <div class="field" style="margin-top:14px" x-show="dlg.action === 'PASS' && dlg.ev && dlg.ev.gate === 'IN' && dlg.ev.status === 'UNREADABLE'">
+      <label for="dlg-manual">Biển số (nhập tay, có thể để trống)</label>
+      <input id="dlg-manual" x-model="dlg.manual" autocomplete="off" placeholder="Ví dụ 59X1-12345">
+      <p class="hint">Để trống thì hệ thống ghi xe này là chưa xác nhận biển, cần xử lý khi xe ra.</p>
+    </div>
+    <div class="field" style="margin-top:14px" x-show="needsSession">
+      <label for="dlg-session" x-text="dlg.ev && dlg.ev.status === 'FUZZY' ? 'Đây là xe nào trong bãi? (bắt buộc)' : 'Đóng phiên của xe nào? (không bắt buộc)'"></label>
+      <select id="dlg-session" x-model="dlg.sessionId">
+        <template x-if="!(dlg.ev && dlg.ev.status === 'FUZZY')"><option value="">Không đóng phiên nào</option></template>
+        <template x-for="o in sessionOptions" :key="o.v"><option :value="o.v" x-text="o.l"></option></template>
+      </select>
+    </div>
+    <div class="err-text" role="alert" x-show="dlg.error" x-text="dlg.error" style="margin-top:14px"></div>
+    <div class="dlg-acts">
+      <button type="button" class="btn ghost" @click="dlg.open = false">Hủy</button>
+      <button id="dlg-confirm" class="btn" :class="dlg.action === 'DENY' ? 'danger' : ''" :disabled="dlg.busy || wsState !== 'up' || (dlg.ev && holdLeft(dlg.ev) === 0)" x-text="dlg.busy ? 'Đang gửi…' : (dlg.action === 'PASS' ? 'Xác nhận cho qua' : 'Xác nhận từ chối')"></button>
+    </div>
+  </form>
+</div>
+
+<!-- ============ CHI TIẾT MỘT LƯỢT ============ -->
+<div class="scrim" x-show="detail" @click.self="detail = null">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dt-title" style="width:min(720px,100%)" x-show="detail">
+    <h2 id="dt-title" x-text="detail && ('Lượt #' + detail.event_id + ' · ' + gateName(detail.gate))"></h2>
+    <div class="detail-grid">
+      <img :src="detail && detail.image_url" alt="Ảnh chụp tại cổng">
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="plate lg" :class="{none: !(detail && detail.plate)}"><span class="l1" x-text="detail && plateLines(detail.plate)[0]"></span><span class="l2" x-text="detail && plateLines(detail.plate)[1]"></span></div>
+        <dl class="kv" style="grid-template-columns:110px 1fr">
+          <dt>Trạng thái</dt><dd x-text="detail && statusInfo(detail).label"></dd>
+          <dt>Thời gian</dt><dd x-text="detail && time(detail.time)"></dd>
+          <dt>Độ tin cậy</dt><dd x-text="detail && detail.confidence != null ? pct(detail.confidence) + '%' : '—'"></dd>
+          <dt>Kết quả</dt><dd x-text="detail && resultText(detail)"></dd>
+          <dt>Thiết bị</dt><dd class="mono" x-text="detail && detail.device_id"></dd>
+        </dl>
+      </div>
+    </div>
+    <div style="text-align:right"><button id="dlg-detail-close" class="btn ghost" @click="detail = null">Đóng</button></div>
+  </div>
+</div>
+
+<div class="toast" :class="toast && toast.kind" role="status" aria-live="polite" x-show="toast" x-text="toast && toast.msg"></div>
+
+</body>
+</html>

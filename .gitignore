@@ -38,3 +38,19 @@ build/
 .pio/
 *.bin
 *.hex
+
+# Python test cache
+.pytest_cache/
+
+# SQLite chế độ WAL sinh thêm file phụ (*.db không bắt được)
+*.db-wal
+*.db-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Bí mật và cấu hình riêng từng máy (không bao giờ push)
+.env
+secrets.h
+
+# Gói nén sinh ra khi đóng gói
+*.zip
