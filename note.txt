@@ -1,0 +1,37 @@
+# BÁO CÁO PHÂN LOẠI THÔNG TIN CHƯA XÁC NHẬN (FIRMWARE NÚT B)
+
+Tài liệu này phân loại các thông số đang dùng trong mã nguồn Nút B (`pins.h`, `config.h`, `main.cpp`) thành 3 nhóm rõ ràng để kiểm soát rủi ro trước khi chạy thực tế.
+
+---
+
+## 1. CÁC GIÁ TRỊ TỰ Ý ĐỀ XUẤT (Cần kiểm tra & hiệu chỉnh)
+Đây là các thông số không có sẵn trong file ngữ cảnh, được tạm gán để code biên dịch được:
+
+* **Chân GPIO (`pins.h` - Q1):**
+  * `HC_SR04_TRIG_PIN = 43`, `HC_SR04_ECHO_PIN = 44`, `DIN_SERVO_PIN = 21`.
+  * *Rủi ro:* Cần đối chiếu với pinout thực tế của board ESP32-S3-N16R8 CAM (và thành viên phụ trách lắp ráp phần cứng) để đảm bảo không trùng chân camera hoặc PSRAM Octal.
+* **Thời gian hành trình Servo 360 độ (`main.cpp` - Q2):**
+  * Thời gian quay mở/đóng cổng (`1500 ms`) và cơ chế xuất xung.
+  * *Rủi ro:* Servo 360 độ không có phản hồi góc, cần đo đạc trực tiếp trên mô hình cổng thực tế để chỉnh lại thời gian quay và độ rộng xung dừng, tránh làm kẹt hoặc lệch thanh chắn.
+
+---
+
+## 2. CÁC THÔNG SỐ CẦN THÔNG TIN THỰC TẾ (Từ hạ tầng mạng & Server)
+Các giá trị đang để dạng chuỗi mẫu, bắt buộc phải điền đúng theo môi trường triển khai thực tế của nhóm:
+
+* **Cấu hình Wi-Fi (`config.h`):** `WIFI_SSID` và `WIFI_PASSWORD` thực tế của mạng LAN 2.4GHz.
+* **Địa chỉ Server (`config.h`):** IP tĩnh thực tế của Raspberry Pi 4 trong mạng LAN (đang để mẫu `192.168.1.100`).
+* **Khóa bảo mật (`config.h`):** Giá trị `DEVICE_KEY` (`X-Device-Key`) phải khớp hoàn toàn với biến cấu hình `.env` của nhóm làm Backend Server.
+* **Định danh thiết bị (`pins.h`):** `DEVICE_ID = "node_b_out"` cần thống nhất với tên thiết bị được khai báo trong CSDL của Server.
+
+---
+
+## 3. CÁC GIÁ TRỊ DÙNG MẶC ĐỊNH TỪ FILE NGỮ CẢNH (Chờ chốt nghiệm thu)
+Các thông số này đã được nêu sẵn trong tài liệu dự án nhưng vẫn nằm trong danh mục "CHƯA CHỐT" (Q10), đang được áp dụng nguyên bản:
+
+* **Ngưỡng kích hoạt cảm biến:** Khoảng cách `40.0 cm` (`DISTANCE_THRESHOLD_CM`) duy trì liên tục `300 ms` (`DETECT_STABLE_MS`).
+* **Thời gian mở cổng tối đa:** `10 giây` (`GATE_OPEN_MAX_S`).
+* **Thời gian xác nhận xe đã đi qua hẳn:** `1000 ms` (`CLEAR_CHECK_MS`).
+* **Thời gian chống kích hoạt lặp (Cooldown):** `5000 ms` (`COOLDOWN_MS`).
+* **Timeout chờ phản hồi HTTP POST:** `8000 ms` (`SERVER_TIMEOUT_MS`).
+* **Độ phân giải ảnh chụp:** `FRAMESIZE_SVGA`.
