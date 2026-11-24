@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import config, db, logic, media, security
+from .edge import install as install_edge
 from .hub import hub
 from .logic import ApiError, alert_out, device_out, event_out, norm, session_out
 
@@ -111,6 +112,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="GATE VISION", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+install_edge(app)        # lop bien tren Pi 4: endpoint /esp32/*, AI, thanh chan (xem server/edge/README_EDGE.md)
 
 
 # ---------- lỗi theo hợp đồng ----------

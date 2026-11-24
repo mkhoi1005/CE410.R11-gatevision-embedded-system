@@ -1,7 +1,7 @@
 # Server GATE VISION (phần phục vụ web)
 
 Làm gì: phục vụ web tĩnh, API cho người trực (`web/API_CONTRACT_WEB.md`), WebSocket `/ws/events`, ảnh `/media/...`, dữ liệu SQLite.
-CHƯA làm: nhận ảnh từ ESP32 (v2 mục 6.1: capture, heartbeat, command), module AI đọc biển, gửi lệnh mở cổng xuống ESP32, khóa chéo hai cổng (Q5), `audit_log` (Q9). Hàm `logic.process_capture(...)` là chỗ sau này endpoint ESP32 sẽ gọi.
+CHƯA làm: khóa chéo hai cổng (Q5), `audit_log` (Q9). Phần nhận ảnh từ ESP32 (v2 mục 6.1: capture, heartbeat, command), module AI đọc biển và lệnh mở thanh chắn đã làm ở nhánh `edge-pi4`, nằm trong `server/edge/` — xem `server/edge/README_EDGE.md`. Hàm `logic.process_capture(...)` là chỗ sau này endpoint ESP32 sẽ gọi.
 
 ## Cách nhanh nhất
 Windows: bấm đúp `chay_web.bat` (ở thư mục `gatevision`). Linux/Mac/Pi: `bash chay_web.sh`. Script tự cài thư viện ở lần đầu, bật chế độ thử, rồi mở trình duyệt (bản Windows).
@@ -47,3 +47,22 @@ Toàn bộ dữ liệu (cơ sở dữ liệu SQLite và ảnh) nằm trong thư 
 ## Chạy cho máy khác trong mạng LAN
 
 Windows: bấm đúp `chay_web_LAN.bat` (hiện địa chỉ IPv4 của máy). Linux/Pi: `HOST=0.0.0.0 bash chay_web.sh`. Trên máy khác mở `http://<IPv4>:8000`. Đã thử: đăng nhập, WebSocket và từ chối Origin lạ đều đúng khi truy cập bằng IP. Windows có thể hỏi Firewall, chọn cho phép mạng riêng. Chỉ dùng trong mạng riêng (HTTP, không mã hóa).
+
+## Lớp biên trên Raspberry Pi 4 (`server/edge/`)
+
+Thêm ở nhánh `edge-pi4`. Gắn vào server bằng hai dòng trong `main.py`; **không viết lại luật
+nghiệp vụ** — vẫn gọi `logic.process_capture(...)` đúng như README này yêu cầu.
+
+Thêm vào: `POST /esp32/capture` (1–3 khung JPEG, ghi xuống đĩa rồi mới trả mã xác nhận),
+`POST /esp32/event` (C1/C2), `POST /esp32/heartbeat`, `GET /esp32/command`,
+`GET /esp32/status`. Không đụng tới endpoint của web (v2 mục 6.3).
+
+Chạy thử không cần Pi, không cần servo, không cần model AI:
+
+```bash
+cd webapp
+python3 server/edge/tools/smoke_edge.py          # 18 nhóm kịch bản, phủ 8/10 kịch bản Bảng 9
+python3 -m server.edge.tools.sim_node --help     # giả lập nút ESP32-CAM
+```
+
+Chi tiết cấu hình, sơ đồ luồng một lượt xe và các chỗ hồ sơ W3-4 cần sửa: `server/edge/README_EDGE.md`.

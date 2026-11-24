@@ -1,0 +1,7 @@
+# Thư viện cho lớp biên trên Raspberry Pi 4 (cài THÊM vào server/requirements.txt)
+ultralytics>=8.3,<9        # nạp model YOLO NCNN đã xuất
+onnxruntime>=1.17          # chạy mô hình OCR (CRNN + CTC)
+opencv-python-headless>=4.9  # giải mã JPEG, cắt vùng biển, ghi ảnh bằng chứng
+numpy>=1.24
+pigpio>=1.78               # xung servo do phần cứng tạo, không giật khi CPU chạy AI
+# RPi.GPIO            # dự phòng nếu không dùng pigpio; đặt GV_GPIO=rpigpio
