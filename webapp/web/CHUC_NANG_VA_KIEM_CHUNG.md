@@ -1,6 +1,6 @@
 # Web GATE VISION: chức năng hiện có và cách kiểm chứng
 
-Cập nhật: 17/11/2026 (bản 2: thêm tải CSV, màn hình nhỏ, chạy qua LAN). Phạm vi: phần web (giao diện người trực) và server FastAPI phục vụ web. Phần ESP32 và Raspberry Pi chưa nằm trong tài liệu này (xem mục 6).
+Cập nhật: 23/11/2026 (bản 3: giao diện "vé gửi xe"; trước đó bản 2 thêm tải CSV, màn hình nhỏ, chạy qua LAN). Phạm vi: phần web (giao diện người trực) và server FastAPI phục vụ web. Phần ESP32 và Raspberry Pi chưa nằm trong tài liệu này (xem mục 6).
 
 ## 1. Đã làm được
 
@@ -12,16 +12,16 @@ Cập nhật: 17/11/2026 (bản 2: thêm tải CSV, màn hình nhỏ, chạy qua
 - Lịch sử: lọc theo biển, cổng, trạng thái, khoảng thời gian; phân trang "Tải thêm"; bấm dòng (hoặc Enter) xem chi tiết kèm ảnh. Nút "Tải CSV (theo bộ lọc)" xuất bảng ra file mở được bằng Excel (UTF-8 có BOM, tối đa 5000 dòng mỗi lần).
 - Xe trong bãi, Thiết bị (trạng thái, IP, RSSI, uptime), Thống kê trong ngày, Hồ sơ cá nhân, Quản lý người dùng (chỉ admin).
 - Mất kết nối trực tiếp: hiện biểu ngữ, khóa nút "Cho qua", tự kết nối lại rồi tải lại dữ liệu để không sót.
-- Dùng được trên điện thoại và máy tính bảng (đã kiểm tra ở 390 px và 768 px, không tràn ngang). Trên màn hình dưới 560 px bảng Lịch sử chỉ hiện 4 cột chính, chi tiết xem khi bấm dòng.
+- Dùng được trên điện thoại và máy tính bảng (đã kiểm tra ở 390 px và 768 px, không tràn ngang). Từ 760 px trở xuống, Lịch sử hiện dạng danh sách vé (bấm vé để xem chi tiết); bảng Xe trong bãi dưới 560 px chỉ hiện 4 cột chính.
 - Phím Esc đóng hộp thoại, focus chuyển vào hộp thoại khi mở và trả về nút cũ khi đóng.
-- Giao diện hướng A "Sổ trực": nền xanh đậm, ảnh nền chìm, chữ Be Vietnam Pro, trạng thái bằng chữ + chấm màu.
+- Giao diện v3 "vé gửi xe" (23/11/2026): nền kem, viền mực, bóng đổ cứng; mỗi lượt xe là một tấm vé có cuống A/B, số vé, thẻ biển số và con dấu (ĐÃ VÀO, ĐÃ RA, CHỜ DUYỆT, TỪ CHỐI, HẾT HẠN); lượt cần duyệt hiện khung hồng "Ê khoan!"; Lịch sử chuyển sang danh sách vé khi màn hình dưới 760 px. Font duy nhất: Mali (OFL, chép sẵn). Chi tiết trong `DESIGN.md`.
 
 **Server (thư mục `server/`)**
 - Đăng nhập cookie `gv_session` (HttpOnly, SameSite=Lax), băm mật khẩu scrypt, chặn thử mật khẩu (5 lần sai trong 5 phút thì 429).
 - Đủ endpoint theo `web/API_CONTRACT_WEB.md`, WebSocket `/ws/events` có kiểm tra Origin, `/media` cần đăng nhập và chặn path traversal.
 - Vòng kiểm tra hết hạn HOLD, giám sát thiết bị (30 giây không heartbeat thì báo `DEVICE_OFFLINE`).
-- Công cụ thử `POST /dev/sim/{kind}` chỉ tồn tại khi `GV_DEV=1`.
-- 22 bài kiểm thử tự động (`server/tests/test_api.py`).
+- Công cụ thử `POST /dev/sim/{kind}` chỉ tồn tại khi `GV_DEV=1`. Ở chế độ này mỗi lần khởi động server coi hai camera giả lập là đang hoạt động (không có ESP32 thật). Chạy thật thì camera chỉ "online" khi có heartbeat, đúng yêu cầu.
+- 23 bài kiểm thử tự động (`server/tests/test_api.py`).
 
 ## 2. Cách chạy
 
@@ -71,6 +71,7 @@ Mở "Công cụ thử" rồi làm lần lượt. Mỗi dòng: thao tác, kết 
 | 22 | Lịch sử: bấm "Tải CSV (theo bộ lọc)" (sau "Thêm 30 xe vào + ra") | Tải file `.csv`; mở bằng Excel thấy đủ dòng, tiếng Việt đúng. Lọc cổng A rồi tải lại thì file chỉ có các dòng "A vào" |
 | 23 | Mở web bằng điện thoại cùng Wi-Fi qua `chay_web_LAN.bat` | Đăng nhập được; bấm "Xe vào hợp lệ" trên máy tính thì điện thoại thấy lượt mới ngay (WebSocket qua IP) |
 | 24 | Thu hẹp cửa sổ trình duyệt xuống khoảng 390 px (hoặc dùng điện thoại) | Không có thanh cuộn ngang; bảng Lịch sử còn cột Thời gian, Cổng, Biển số, Trạng thái; bộ lọc xếp 2 cột; hộp thoại xử lý vẫn đủ nút |
+| 25 | Trang Giám sát khi có lượt giữ ("Ra, biển gần giống") | Chỉ bàn xử lý, đồng hồ đếm ngược và số lượt chờ ở menu có màu hổ phách; các phần khác giữ màu giấy và chữ nâu than; biển số trong sổ trực hiện dạng thẻ biển trắng |
 
 Lưu ý: trong trang xem trước (artifact) nút "Tải CSV" không tải được vì khung xem trước chặn tải xuống; hãy thử CSV khi chạy server trên máy bạn.
 
@@ -78,6 +79,13 @@ Kiểm chứng riêng cho chế độ server thật:
 - Mở http://localhost:8000/media/idle.svg khi chưa đăng nhập: bị từ chối. Đăng nhập rồi mở: thấy ảnh.
 - Dừng server khi đang mở web: biểu ngữ mất kết nối hiện ra; chạy lại server: web tự nối lại.
 - Chạy không đặt `GV_DEV`: không có "Công cụ thử", mật khẩu admin ngẫu nhiên in ra một lần ở cửa sổ lệnh.
+
+### Kiểm tra nhanh giao diện v3 (bằng mắt)
+1. Mở trang Giám sát, bấm "Công cụ thử" > "Vào, không đọc được": khung hồng có băng keo, bong bóng "Ê khoan!", biển nghiêng, đồng hồ đỏ, hai nút lớn. Bấm "Từ chối" rồi xác nhận: sổ trực thêm một vé có con dấu TỪ CHỐI.
+2. Bấm "Xe vào hợp lệ" / "Xe ra khớp": vé mới có cuống xanh A "Vào" hoặc cuống vàng B "Ra", con dấu ĐÃ VÀO / ĐÃ RA.
+3. Vào Lịch sử rồi thu hẹp cửa sổ dưới 760 px: bảng biến thành danh sách vé; bấm một vé mở chi tiết có số vé và con dấu.
+4. Vào Xe trong bãi: mỗi xe là một vé "Phiên #000x" có con dấu ĐANG GỬI; xe nhập tay không biển (biển chưa xác nhận) có dấu đỏ CHƯA XÁC NHẬN. Gõ biển vào ô tìm thì chỉ còn vé khớp.
+5. Vào Thiết bị và Thống kê: thẻ camera A xanh nhạt / B vàng; ô "Trong bãi lúc này" số to màu đỏ.
 
 ## 4. Đối chiếu với kiểm thử tự động
 
@@ -100,7 +108,6 @@ Kiểm chứng riêng cho chế độ server thật:
 
 ## 5. Giới hạn đã biết
 
-- Ảnh nền `img/bg.jpg` chưa xác minh giấy phép sử dụng: cần nhóm xác nhận nguồn trước khi nộp.
 - Ảnh camera trong chế độ thử là ảnh giả (SVG), không phải ảnh thật.
 - Chưa thử trên Raspberry Pi 4 (chỉ chạy trên máy dev). Đã thử truy cập qua IP LAN trên máy dev (đăng nhập, WebSocket, từ chối Origin lạ đều đúng), chưa thử trên điện thoại thật.
 - Kiểm tra màn hình nhỏ chỉ bằng trình duyệt giả lập kích thước (390 px, 768 px), chưa thử trên thiết bị thật.

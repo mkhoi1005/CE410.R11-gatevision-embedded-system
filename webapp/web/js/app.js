@@ -209,6 +209,16 @@ function app() {
     },
     camOk(gate) { const d = this.device(gate); return !!(d && d.online) && !this.camErr[gate]; },
     statusInfo(ev) { return STATUS[ev.status] || STATUS.OK; },
+    // con dấu trên vé gửi xe: kết quả cuối cùng của lượt
+    stamp(ev) {
+      const r = ev.resolution;
+      if (r) return r.action === 'PASS' ? { t: 'Đã cho qua', c: 'ok' } : r.action === 'DENY' ? { t: 'Từ chối', c: 'err' } : { t: 'Hết hạn', c: 'off' };
+      if (ev.decision === 'HOLD') return { t: 'Chờ duyệt', c: 'hold' };
+      return { t: ev.gate === 'IN' ? 'Đã vào' : 'Đã ra', c: 'ok' };
+    },
+    sessNo(s) { return 'Phiên #' + String(s.id).padStart(4, '0'); },
+  ticketNo(ev) { return 'Vé #' + String(ev.event_id).padStart(4, '0'); },
+    today() { return new Intl.DateTimeFormat('vi-VN', { timeZone: cfg.TZ, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date()); },
     resultText(ev) {
       const r = ev.resolution;
       if (!r) return ev.decision === 'OPEN' ? 'Đã mở cổng' : 'Đang giữ, chờ người trực';

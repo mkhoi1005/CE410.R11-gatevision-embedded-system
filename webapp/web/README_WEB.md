@@ -19,7 +19,7 @@ Mở http://localhost:8080 trong trình duyệt.
 
 Chức năng, cách kiểm chứng từng bước: `CHUC_NANG_VA_KIEM_CHUNG.md`. Prompt gửi AI của các bạn trong nhóm: `PROMPT_WEB_CHO_NHOM.md`.
 
-Đổi độ chìm của ảnh nền: sửa `--dim` trong `css/app.css` (0 = rõ hết, 1 = đen hẳn; hiện .80). Ảnh nền ở `img/bg.jpg`.
+Màu và quy tắc giao diện: xem `DESIGN.md` (bản v3, phong cách "vé gửi xe"). Mọi màu nằm ở `:root` trong `css/app.css`; font chép sẵn trong `fonts/`.
 
 ## Nối với server thật
 

@@ -100,6 +100,10 @@ async def lifespan(app):
     hub.blocked = False
     hub.start()
     seed_first_run()
+    if config.dev():  # chế độ thử không có ESP32 thật: mỗi lần khởi động coi camera giả lập là đang hoạt động
+        with db.conn:
+            db.conn.execute("UPDATE devices SET online=1, state='IDLE', last_seen=?", (db.iso(db.now_utc()),))
+        logic.resolve_alerts("type='DEVICE_OFFLINE'", ())
     logic.expire_due()  # fail-safe: lượt HOLD đã quá hạn trong lúc server tắt thì đánh dấu hết hạn, không mở
     tasks = [asyncio.create_task(expiry_loop())]
     if config.dev():

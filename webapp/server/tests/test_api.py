@@ -269,3 +269,22 @@ def test_expire_task_marks_short_hold(c):
         db.conn.execute("UPDATE events SET hold_expires_at='2000-01-01T00:00:00Z' WHERE event_id=?", (e["event_id"],))
     logic.expire_due()
     assert c.get(f"/api/v1/events/{e['event_id']}").json()["resolution"]["action"] == "EXPIRED"
+
+
+def test_dev_restart_revives_devices(tmp_path, monkeypatch):
+    import time
+    from fastapi.testclient import TestClient
+    monkeypatch.setenv("GV_DEV", "1"); monkeypatch.setenv("GV_DATA_DIR", str(tmp_path))
+    from server import main, db
+    with TestClient(main.app) as c1:
+        pass
+    # mô phỏng lần chạy trước kết thúc khi camera đã offline và quá hạn
+    import sqlite3
+    cx = sqlite3.connect(tmp_path / "gatevision.db")
+    cx.execute("UPDATE devices SET online=0, state='OFFLINE', last_seen='2000-01-01T00:00:00Z'"); cx.commit(); cx.close()
+    with TestClient(main.app) as c:
+        c.post("/api/v1/auth/login", json={"username": "truc1", "password": "truc1234"})
+        time.sleep(2.5)  # đủ để vòng giám sát chạy
+        devs = c.get("/api/v1/devices").json()["items"]
+        assert all(d["online"] for d in devs)
+        assert c.get("/api/v1/alerts?status=OPEN").json()["items"] == []

@@ -20,7 +20,7 @@ Bạn là kỹ sư đồng hành với nhóm GATE VISION (môn Kỹ thuật hệ
 
 ## 3. Web hiện có (đã xong, chạy được)
 
-Web tĩnh (HTML + CSS + JS + Alpine.js đã chép sẵn, không CDN, không build) trong `web/`, phục vụ bởi server FastAPI trong `server/`. Định tuyến bằng hash: `#dashboard`, `#history`, `#lot`, `#devices`, `#stats`, `#profile`, `#users`.
+Web tĩnh (HTML + CSS + JS + Alpine.js đã chép sẵn, không CDN, không build) trong `web/`, phục vụ bởi server FastAPI trong `server/`. Giao diện v3 phong cách "vé gửi xe" (nền kem, viền mực, bóng đổ cứng, mỗi lượt xe là một tấm vé có con dấu; một họ font Mali), quy tắc trong `web/DESIGN.md`. Định tuyến bằng hash: `#dashboard`, `#history`, `#lot`, `#devices`, `#stats`, `#profile`, `#users`.
 
 Chức năng: đăng nhập (cookie phiên), đổi mật khẩu bắt buộc lần đầu, Giám sát (2 camera, bàn xử lý lượt HOLD, hàng chờ, nhật ký), Cho qua/Từ chối có xác nhận, nhập tay biển khi cổng VÀO không đọc được, chọn phiên khi cổng RA biển gần giống/không khớp, hết hạn HOLD thì `EXPIRED`, Lịch sử có lọc, phân trang và nút tải CSV (web tự gom các trang `GET /events` theo bộ lọc rồi tạo file ngay trong trình duyệt, không có endpoint riêng; hợp đồng không đổi), Xe trong bãi, Thiết bị, Thống kê, Hồ sơ, Quản lý người dùng (admin). Mất WebSocket thì khóa nút Cho qua, tự nối lại. Giao diện dùng được trên điện thoại (từ 390 px). Truy cập từ máy khác trong LAN bằng IP đã thử đúng (Origin WebSocket so với header Host, nên server phải nghe `0.0.0.0` và web/API cùng địa chỉ).
 
@@ -55,11 +55,11 @@ Tiền tố `/api/v1`. Thời gian ISO 8601 UTC. Lỗi: `{"error":{"code":"...",
 ## 6. Bố cục thư mục
 
 ```
-web/    index.html, css/app.css, js/{app,api,mock,config,alpine.min}.js, img/, fonts/,
+web/    index.html, css/app.css, js/{app,api,mock,config,alpine.min}.js, fonts/,
         API_CONTRACT_WEB.md, README_WEB.md, DESIGN.md, PRODUCT.md,
         CHUC_NANG_VA_KIEM_CHUNG.md, PROMPT_WEB_CHO_NHOM.md
 server/ main.py, logic.py, db.py, security.py, hub.py, media.py, config.py,
-        tests/test_api.py (22 bài), README_SERVER.md, requirements.txt
+        tests/test_api.py (23 bài), README_SERVER.md, requirements.txt
 chay_web.bat, chay_web_LAN.bat, chay_web.sh
 ```
 
